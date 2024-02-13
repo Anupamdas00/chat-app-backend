@@ -47,7 +47,7 @@ router.post("/users/search", async (req, res) => {
         const searchEmail = req.body;
         console.log(searchEmail);
         const result = await User.find({
-            email : { $regex : new RegExp(searchEmail, 'i')}
+            email : { $regex : new RegExp(searchEmail.email, 'i')}
         })
         if(!result){
             return res.status(404).send({msg : 'Data not found'})
