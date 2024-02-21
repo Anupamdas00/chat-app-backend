@@ -42,12 +42,15 @@ router.get("/user/me", auth,(req, res) => {
     res.send(req.user)
 })
 
-router.post("/users/search", async (req, res) => {
+router.post("/users/search",auth, async (req, res) => {
     try{
+        const user = req.user;
         const searchEmail = req.body;
-        console.log(searchEmail);
         const result = await User.find({
-            email : { $regex : new RegExp(searchEmail.email, 'i')}
+            $and : [
+                {email : { $ne : user.email }},
+               { email : { $regex : new RegExp(searchEmail.email, 'i')} } 
+            ]
         })
         if(!result){
             return res.status(404).send({msg : 'Data not found'})
