@@ -20,6 +20,12 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
     socket.emit('message','Message from server')
+
+
+    socket.on('addRequest', (msg) => {
+        console.log(msg);
+    })
+    
 })
 
 
