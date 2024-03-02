@@ -35,6 +35,18 @@ const schema = new Schema({
 })
 // required : true
 
+schema.virtual('sentRequest', {
+    ref : 'Requests',
+    localField : '_id',
+    foreignField : 'sender'
+})
+
+schema.virtual('recievedRequest', {
+    ref : 'Request',
+    localField : '_id',
+    foreignField : 'reciever'
+})
+
 
 schema.methods.toJSON = function(){
     const user = this;

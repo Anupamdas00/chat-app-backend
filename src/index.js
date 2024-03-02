@@ -19,11 +19,11 @@ app.get('/', (req, res) => {
 })
 
 io.on('connection', (socket) => {
+    console.log('User is connected');
     socket.emit('message','Message from server')
 
-
-    socket.on('addRequest', (msg) => {
-        console.log(msg);
+    socket.on('addRequest', ( request) => {
+        console.log(request);
     })
     
 })
