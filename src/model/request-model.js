@@ -17,7 +17,8 @@ const schema = new Schema(
         status : {
             type : String,
             enum : ['accepted', 'pending', 'rejected'],
-            required : true
+            required : true,
+            default : 'pending'
         }
     }
 )
