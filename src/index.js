@@ -3,7 +3,6 @@ const cors = require('cors')
 require('./db/mongoose');
 const port = process.env.port || 3000;
 const userRouter = require('./router/user-router');
-const sockectio = require('socket.io');
 const http = require('http')
 const websocket = require('./websocket/websocket')
 

@@ -42,7 +42,7 @@ schema.virtual('sentRequest', {
 })
 
 schema.virtual('recievedRequest', {
-    ref : 'Request',
+    ref : 'Requests',
     localField : '_id',
     foreignField : 'reciever'
 })
