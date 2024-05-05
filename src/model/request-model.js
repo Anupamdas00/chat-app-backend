@@ -20,6 +20,9 @@ const schema = new Schema(
             required : true,
             default : 'pending'
         }
+    },
+    {
+        timestamps : true
     }
 )
 

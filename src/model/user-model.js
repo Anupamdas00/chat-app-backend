@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const { Schema } = require('mongoose');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const { Timestamp } = require('mongodb');
 
 const schema = new Schema({
     name : {
@@ -32,7 +33,10 @@ const schema = new Schema({
             }
         }
     ]
-})
+},{
+    timestamps : true
+}
+)
 // required : true
 
 schema.virtual('sentRequest', {
