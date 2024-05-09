@@ -3,7 +3,7 @@ const Request = require("../model/request-model");
 const auth = require("../middleware/auth");
 const User = require("../model/user-model");
 const { addUser, removeUser } = require("../utils/users");
-const { addRequestMessage, fetchReqNotification, recievedRequests } = require('../utils/utility-function');
+const { generateRequestMsg, fetchReqNotification, recievedRequests, getSocketIdByUserId } = require('../utils/utility-function');
 
 
 function setupWebSocket(server) {
@@ -16,42 +16,42 @@ function setupWebSocket(server) {
     const { token } = socket.handshake.auth;
     const { userEmail, userId } = socket.handshake.query;
     console.log('current user mongooseId', userId);
-    let users = addUser(socket.id, token, userEmail);
+    let users = addUser(socket.id, token, userId, userEmail);
     console.log('Online users', users);
 
     socket.emit("message", "Message from server");
 
-    // ---------------getting add notifications------------------
+    // ---------------getting add request------------------
     // will work on this after addRequest event completion
-    // const recievedRequestsMsg = await recievedRequests(Request, userId)
-    // socket.emit('gotRequest', recievedRequestsMsg)
-
-
-    // -----------------------notifying add request on login------------------------
-
-   
+    const recievedRequestsMsg = await recievedRequests(Request, userId)
+    socket.emit('gotRequest', recievedRequestsMsg)
 
     // -----------------sending add request---------------------
     socket.on("addRequest", async (request) => {
-      console.log(request);
       const newRequest = new Request(request);
-      const reqSaved = await newRequest.save();
-      console.log('req saved', reqSaved);
-      // const requests = await Request.find({});
-      // const recieverName = await User.findOne({'tokens.token' : token })
+      const storedRequests = await Request.find({});
+      const sender = await User.findOne({'tokens.token' : token })
+     
 
-      // const isAlreadySent = requests.some(
-      //   (req) =>
-      //     req.sender.equals(newRequest.sender) &&
-      //     req.reciever.equals(newRequest.reciever)
-      // );
+      const isAlreadySent = storedRequests.some(
+        (req) =>
+          req.sender.equals(newRequest.sender) &&
+          req.reciever.equals(newRequest.reciever)
+      );
 
-      // if (isAlreadySent) {
-      //   socket.emit("sentRequest", { result: "failed" });
-      // } else {
-      //   await newRequest.save();
-      //   socket.emit("sentRequest", { result: "success" });
-      // }
+      if (isAlreadySent) {
+        socket.emit("sentRequest", { result: "failed" });
+      } else {
+
+        // for new requset request is being saved but if the recived user is not online showing error because of the use is not online
+        //that use data is not available to users array
+        const saveRequest = await newRequest.save();
+        socket.emit("sentRequest", { result: "success" });
+        console.log('new saved request', saveRequest);
+
+        const recievedUser = getSocketIdByUserId(users, saveRequest.reciever.toString())
+        io.to(recievedUser.socketid).emit('gotRequest', generateRequestMsg(sender.name))
+      }
 
     });
 

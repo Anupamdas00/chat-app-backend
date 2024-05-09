@@ -1,8 +1,8 @@
 let users = []
 
-const addUser = (socketid,  token, email) => {
+const addUser = (socketid,  token, userId, email) => {
 
-    const user = { socketid, token, email };
+    const user = { socketid, token, userId, email };
     users.push(user)
     return users;
 }

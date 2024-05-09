@@ -18,29 +18,39 @@ const recievedRequests = async (requestModel, id) => {
   let notificationsMsg;
   try{
     const recievedReqs = await requestModel.find({ "reciever" : id });
-    
-    const senderNames = recievedReqs.map(async (request) => {
+
+    const sentRequestDetails = recievedReqs.map(async (request) => {
       const doc = await requestModel.findOne({ 'sender' : request.sender  }).populate('sender').exec();
-      return doc.sender.name;
+      const requestId = request._id.toString();
+      return { requestId, name : doc.sender.name }
     })
-    notificationsMsg = Promise.all(senderNames).then(res => res)
-    return (await notificationsMsg).map((name) => addRequestMessage(name))
+    requestObj = Promise.all(sentRequestDetails).then(res => res);
+    return (await requestObj).map((req) => {
+      return generateRequestMsg(req.requestId, req.name)
+    })
 
   } catch (error) {
     console.error('Error in retrieving notification message', error);
   }
 }
 
-const addRequestMessage = (name) => {
-  return `${name} has sent you add request`
+const generateRequestMsg = (requestId ,name) => {
+  return { msg : `${name} has sent you friend request`,  requestId}
 }
 
+const getSocketIdByUserId = (onlineUsers, sentUserId) => {
+  console.log('-------',onlineUsers, sentUserId);
+  const user = onlineUsers.find((user) => user.userId === sentUserId );
+  console.log('user from getSocketIdByUserId function', user);
+  return user;
+}
 
 
 
 
 module.exports = {
   fetchReqNotification,
-    addRequestMessage,
-    recievedRequests
+  generateRequestMsg,
+    recievedRequests,
+    getSocketIdByUserId
 }   
