@@ -70,14 +70,30 @@ const getUsersByReqId = async (requestModel, reqId) => {
   }
 };
 
-// const getAllFriendList = async (friendModel, userId) => {
-//   try{
-//     const friendDoc = await friendModel.find({ _id : userId });
-//     const friendList = Promise.all(friendDoc).then()
+const getAllFriendList = async (friendModel, id) => {
+  try {
 
-//   }
+    //getting the docs of the loggedin user from friends collection with populated data
+    const friendDoc = await friendModel.find({
+      $or: [{ user1: id }, { user2: id }],
+    }).populate('user1','name').populate('user2', 'name').exec()
 
-// }
+    //returning friendname only from each documents
+    const frinedNames = friendDoc.map((doc) => {
+      const friend =
+        doc.user1._id.toString() === id
+          ? { id : doc.user2._id, name : doc.user2.name }
+          : doc.user2._id.toString() === id
+          ? { id : doc.user1._id, name : doc.user1.name }
+          : null;
+
+      return friend;
+    }); 
+    return frinedNames;
+  } catch (err) {
+    throw new Error("Error getting FrinedList", err);
+  }
+};
 
 module.exports = {
   fetchReqNotification,
@@ -85,4 +101,5 @@ module.exports = {
   recievedRequests,
   getSocketIdByUserId,
   getUsersByReqId,
+  getAllFriendList,
 };

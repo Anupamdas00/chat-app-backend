@@ -9,6 +9,7 @@ const {
   recievedRequests,
   getSocketIdByUserId,
   getUsersByReqId,
+  getAllFriendList,
 } = require("../utils/utility-function");
 const Friend = require("../model/friends-model");
 
@@ -26,6 +27,16 @@ function setupWebSocket(server) {
     console.log("Online users", users);
 
     socket.emit("message", "Message from server");
+
+    const friendNames = await getAllFriendList(Friend, userId);
+    socket.emit("friendlist", friendNames);
+
+    // try{
+    //   const friendNames = await getAllFriendList(Friend, userId);
+    //   console.log('friends Id', friendNames);
+    // }catch(err){
+    //   console.log(err);
+    // }
 
     // ---------------getting add request------------------
     // will work on this after addRequest event completion
@@ -75,9 +86,15 @@ function setupWebSocket(server) {
           const friend = await getUsersByReqId(Request, data.requestId);
           const newFriend = new Friend(friend);
           const newSavedFriend = await newFriend.save();
+
+          // deleting the reqeust from request collection once it responded
           if (newSavedFriend) {
-            await Request.findByIdAndDelete({_id: data.requestId});
+            await Request.findByIdAndDelete({ _id: data.requestId });
           }
+
+          // getting added friends names for loggedin user
+          const friendNames = await getAllFriendList(Friend, userId);
+          socket.emit("friendlist", friendNames);
         } catch (err) {
           console.error(err);
         }
