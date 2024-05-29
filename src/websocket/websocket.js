@@ -10,6 +10,7 @@ const {
   getSocketIdByUserId,
   getUsersByReqId,
   getAllFriendList,
+  getAcceptedRequestSenderId
 } = require("../utils/utility-function");
 const Friend = require("../model/friends-model");
 
@@ -67,13 +68,13 @@ function setupWebSocket(server) {
         socket.emit("sentRequest", { result: "success" });
         console.log("new saved request", saveRequest);
 
-        const recievedUser = getSocketIdByUserId(
+        const recievedUserScocketId = getSocketIdByUserId(
           users,
           saveRequest.reciever.toString()
         );
         const req = generateRequestMsg(saveRequest._id.toString(), sender.name);
         sentReq.push(req);
-        io.to(recievedUser.socketid).emit("gotRequest", sentReq);
+        io.to(recievedUserScocketId).emit("gotRequest", sentReq);
       }
     });
 
@@ -86,15 +87,25 @@ function setupWebSocket(server) {
           const friend = await getUsersByReqId(Request, data.requestId);
           const newFriend = new Friend(friend);
           const newSavedFriend = await newFriend.save();
+          console.log('newSavedFriend', newSavedFriend);
 
           // deleting the reqeust from request collection once it responded
           if (newSavedFriend) {
             await Request.findByIdAndDelete({ _id: data.requestId });
           }
 
-          // getting added friends names for loggedin user
+          // getting added friends names for loggedin user and sending the added friend name
           const friendNames = await getAllFriendList(Friend, userId);
+          console.log('friends list', friendNames);
           socket.emit("friendlist", friendNames);
+
+          //------sending friendname to add to userlist, who sent friend request is accepted-----------
+          const requestAcceptedSenderId = getAcceptedRequestSenderId(newSavedFriend, userId);
+          //getting the  user's socket.id from onlineUser array when log in
+          
+          const getUserSocketId = getSocketIdByUserId(users, requestAcceptedSenderId)
+          console.log('sender socket id', getUserSocketId);
+          io.to(getUserSocketId).emit("friendlist", [{ id : 'shfdhaskjdf', name : 'kichu ekta' }])
         } catch (err) {
           console.error(err);
         }

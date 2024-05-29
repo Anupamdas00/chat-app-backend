@@ -54,10 +54,9 @@ const generateRequestMsg = (requestId, name, createdReq) => {
 };
 
 const getSocketIdByUserId = (onlineUsers, sentUserId) => {
-  console.log("-------", onlineUsers, sentUserId);
   const user = onlineUsers.find((user) => user.userId === sentUserId);
   console.log("user from getSocketIdByUserId function", user);
-  return user;
+  return user.socketid;
 };
 
 const getUsersByReqId = async (requestModel, reqId) => {
@@ -95,6 +94,13 @@ const getAllFriendList = async (friendModel, id) => {
   }
 };
 
+const getAcceptedRequestSenderId = (addedFriendObj, otherUserId) => {
+  if(addedFriendObj.user1.toString() !== otherUserId){
+    return addedFriendObj.user1.toString();
+  }
+  return addedFriendObj.user2.toString()
+}
+
 module.exports = {
   fetchReqNotification,
   generateRequestMsg,
@@ -102,4 +108,5 @@ module.exports = {
   getSocketIdByUserId,
   getUsersByReqId,
   getAllFriendList,
+  getAcceptedRequestSenderId
 };
