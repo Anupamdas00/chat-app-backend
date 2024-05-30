@@ -104,8 +104,8 @@ function setupWebSocket(server) {
           //getting the  user's socket.id from onlineUser array when log in
           
           const getUserSocketId = getSocketIdByUserId(users, requestAcceptedSenderId)
-          console.log('sender socket id', getUserSocketId);
-          io.to(getUserSocketId).emit("friendlist", [{ id : 'shfdhaskjdf', name : 'kichu ekta' }])
+          const acceptedRequestUserDetails = await User.findById(userId);
+          io.to(getUserSocketId).emit("friendlist", [{ id : userId, name : acceptedRequestUserDetails.name }])
         } catch (err) {
           console.error(err);
         }

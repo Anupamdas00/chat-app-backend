@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../model/user-model");
+const Friend = require("../model/friends-model");
 const auth = require("../middleware/auth");
+const { getAllFriendList } = require("../utils/utility-function");
+const { restart } = require("nodemon");
 
 router.post("/users/register", async (req, res) => {
   const user = new User(req.body);
@@ -47,17 +50,26 @@ router.post("/users/search", auth, async (req, res) => {
   try {
     const user = req.user;
     const searchEmail = req.body;
-
     if (searchEmail.email.length <= 1) {
-        return res.send([]);
+      return res.send([]);
     }
 
-    const result = await User.find({
+    const searchResult = await User.find({
       $and: [
         { email: { $ne: user.email } },
         { email: { $regex: new RegExp(searchEmail.email, "i") } },
       ],
+    }).lean();
+
+    //getting user's friendlist to check is friend available among searchresult to add add friend/view profile button in client side
+    const friendList = await getAllFriendList(Friend, user._id.toString());
+    const result = searchResult.map((user) => {
+      user.isFriend = friendList.some(
+        (friend) => friend.id.toString() == user._id.toString()
+      );
+      return user;
     });
+
     if (!result) {
       return res.status(404).send({ msg: "Data not found" });
     }

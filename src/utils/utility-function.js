@@ -77,7 +77,7 @@ const getAllFriendList = async (friendModel, id) => {
       $or: [{ user1: id }, { user2: id }],
     }).populate('user1','name').populate('user2', 'name').exec()
 
-    //returning friendname only from each documents
+    //returning only friendname from each documents
     const frinedNames = friendDoc.map((doc) => {
       const friend =
         doc.user1._id.toString() === id
