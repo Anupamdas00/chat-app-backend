@@ -55,7 +55,6 @@ const generateRequestMsg = (requestId, name, createdReq) => {
 
 const getSocketIdByUserId = (onlineUsers, sentUserId) => {
   const user = onlineUsers.find((user) => user.userId === sentUserId);
-  console.log("user from getSocketIdByUserId function", user);
   return user.socketid;
 };
 

@@ -13,6 +13,7 @@ const {
   getAcceptedRequestSenderId
 } = require("../utils/utility-function");
 const Friend = require("../model/friends-model");
+const { response } = require("express");
 
 function setupWebSocket(server) {
   const io = sockectio(server, { cors: { origin: "http://localhost:4200" } });
@@ -20,10 +21,9 @@ function setupWebSocket(server) {
   // io.use(auth)
 
   io.on("connection", async (socket) => {
-    console.log("User is connected", socket.id);
+    console.log("Connected user socket id", socket.id);
     const { token } = socket.handshake.auth;
     const { userEmail, userId } = socket.handshake.query;
-    console.log("current user mongooseId", userId);
     let users = addUser(socket.id, token, userId, userEmail);
     console.log("Online users", users);
 
@@ -66,7 +66,6 @@ function setupWebSocket(server) {
         //that use data is not available to users array
         const saveRequest = await newRequest.save();
         socket.emit("sentRequest", { result: "success" });
-        console.log("new saved request", saveRequest);
 
         const recievedUserScocketId = getSocketIdByUserId(
           users,
@@ -80,35 +79,43 @@ function setupWebSocket(server) {
 
     // -------response on add request from user------------
     socket.on("responseOnAddRequest", async (data) => {
-      console.log(data);
-
       if (data.responseType == "accepted") {
         try {
           const friend = await getUsersByReqId(Request, data.requestId);
           const newFriend = new Friend(friend);
           const newSavedFriend = await newFriend.save();
-          console.log('newSavedFriend', newSavedFriend);
 
           // deleting the reqeust from request collection once it responded
           if (newSavedFriend) {
             await Request.findByIdAndDelete({ _id: data.requestId });
           }
 
-          // getting added friends names for loggedin user and sending the added friend name
-          const friendNames = await getAllFriendList(Friend, userId);
-          console.log('friends list', friendNames);
-          socket.emit("friendlist", friendNames);
+          // updating current loggedIn user's friendlist-----------------------------------------------
+          let acceptedReqUserId;
+          if(friend.user1.toString() == userId){
+            acceptedReqUserId = friend.user2.toString();
+          } else if(friend.user2.toString() == userId){
+            acceptedReqUserId = friend.user1.toString();
+          } else {
+            console.log('Request sent userId not found');
+          }
+
+          //finding user with acceptedReqUserId id
+          const userDetailsWhoSentReq = await User.findById(acceptedReqUserId);
+          const friendDetailsToSent = [{ id : userDetailsWhoSentReq.id.toString(), name : userDetailsWhoSentReq.name }];
+          socket.emit("friendlist", friendDetailsToSent);
 
           //------sending friendname to add to userlist, who sent friend request is accepted-----------
           const requestAcceptedSenderId = getAcceptedRequestSenderId(newSavedFriend, userId);
           //getting the  user's socket.id from onlineUser array when log in
-          
           const getUserSocketId = getSocketIdByUserId(users, requestAcceptedSenderId)
           const acceptedRequestUserDetails = await User.findById(userId);
           io.to(getUserSocketId).emit("friendlist", [{ id : userId, name : acceptedRequestUserDetails.name }])
         } catch (err) {
           console.error(err);
         }
+      } else if (data.responseType == 'rejected'){
+        await Request.findByIdAndDelete({ _id: data.requestId });
       }
     });
 
