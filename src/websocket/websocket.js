@@ -115,9 +115,13 @@ function setupWebSocket(server) {
           console.error(err);
         }
       } else if (data.responseType == 'rejected'){
-        await Request.findByIdAndDelete({ _id: data.requestId });
+        await Request.findByIdAndDelete({ _id: data.requestId }); 
       }
     });
+
+    socket.on('sentmsg', (data) => {
+      console.log('message from client', data);
+    })
 
     // ------event for user loggingout
     socket.on("loggedOut", (tokenId) => {
