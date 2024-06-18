@@ -53,9 +53,12 @@ const generateRequestMsg = (requestId, name, createdReq) => {
   return reqMsg;
 };
 
-const getSocketIdByUserId = (onlineUsers, sentUserId) => {
-  const user = onlineUsers.find((user) => user.userId === sentUserId);
-  return user.socketid;
+const getSocketIdByUserId = (onlineUsers, userId) => {
+  const user = onlineUsers.find((user) => user.userId === userId);
+  if(!user){
+    throw new Error('User Not found')
+  }
+  return user.socketid
 };
 
 const getUsersByReqId = async (requestModel, reqId) => {
@@ -93,12 +96,28 @@ const getAllFriendList = async (friendModel, id) => {
   }
 };
 
+const fetchUserMsgs = async (userId, msgModel) => {
+  try{
+    const userMsgDocs = await msgModel.find({ recipientId : userId });
+    if(!userMsgDocs){
+      return { msg : 'Start Chatting' }
+    }
+    return userMsgDocs;
+  } catch(err){
+    throw new Error("Unable to fetch messages")
+  }
+}
+
 const getAcceptedRequestSenderId = (addedFriendObj, otherUserId) => {
   if(addedFriendObj.user1.toString() !== otherUserId){
     return addedFriendObj.user1.toString();
   }
   return addedFriendObj.user2.toString()
 }
+
+
+
+
 
 module.exports = {
   fetchReqNotification,
@@ -107,5 +126,6 @@ module.exports = {
   getSocketIdByUserId,
   getUsersByReqId,
   getAllFriendList,
-  getAcceptedRequestSenderId
+  getAcceptedRequestSenderId,
+  fetchUserMsgs
 };

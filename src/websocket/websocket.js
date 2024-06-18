@@ -10,10 +10,11 @@ const {
   getSocketIdByUserId,
   getUsersByReqId,
   getAllFriendList,
-  getAcceptedRequestSenderId
+  getAcceptedRequestSenderId,
+  fetchUserMsgs
 } = require("../utils/utility-function");
 const Friend = require("../model/friends-model");
-const { response } = require("express");
+const  Message  = require("../model/message-model")
 
 function setupWebSocket(server) {
   const io = sockectio(server, { cors: { origin: "http://localhost:4200" } });
@@ -27,7 +28,7 @@ function setupWebSocket(server) {
     let users = addUser(socket.id, token, userId, userEmail);
     console.log("Online users", users);
 
-    socket.emit("message", "Message from server");
+    socket.emit("recieveMsg", "Message from server");
 
     const friendNames = await getAllFriendList(Friend, userId);
     socket.emit("friendlist", friendNames);
@@ -43,6 +44,16 @@ function setupWebSocket(server) {
     // will work on this after addRequest event completion
     const recievedRequestsMsg = await recievedRequests(Request, userId);
     socket.emit("gotRequest", recievedRequestsMsg);
+
+
+    // getting user messages from db
+    fetchUserMsgs(userId, Message)
+      .then((msg) => {
+        socket.emit('recieveMsg', msg)
+      })
+      .catch(err => console.log(err))
+    // const msgs = await fetchUserMsgs(userId, Message)
+    // console.log(msgs);
 
     // -----------------sending add request---------------------
     socket.on("addRequest", async (request) => {
@@ -119,9 +130,27 @@ function setupWebSocket(server) {
       }
     });
 
-    socket.on('sentmsg', (data) => {
+
+    // event to handling messages------------------------------------
+    socket.on('sentmsg', async (data, callback) => {
       console.log('message from client', data);
+      const {  fromId:senderId, toId:recipientId,  text:message } = data;
+      try{
+        const messageDoc = new Message({senderId, recipientId, message});
+        const savedMessage = await messageDoc.save()
+        console.log('saveMessage', savedMessage);
+        if(savedMessage){
+          const { _id, message, createdAt } = savedMessage
+          callback({_id, message, createdAt} )
+          const msgToUserSocketId = getSocketIdByUserId(users, savedMessage.recipientId.toString())
+          socket.to(msgToUserSocketId).emit('recieveMsg', { _id, message, createdAt })
+        }
+      }catch(err){
+        console.log('Error in saving message', err);
+      }
+      
     })
+
 
     // ------event for user loggingout
     socket.on("loggedOut", (tokenId) => {
