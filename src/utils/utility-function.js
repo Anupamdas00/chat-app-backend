@@ -56,7 +56,7 @@ const generateRequestMsg = (requestId, name, createdReq) => {
 const getSocketIdByUserId = (onlineUsers, userId) => {
   const user = onlineUsers.find((user) => user.userId === userId);
   if(!user){
-    throw new Error('User Not found')
+    return null
   }
   return user.socketid
 };
@@ -108,6 +108,20 @@ const fetchUserMsgs = async (userId, msgModel) => {
   }
 }
 
+const fetchUserChatMsgById = async({msgModel, friendId, ownId}) => {
+  const msg = await msgModel.find({
+    $or : [
+      { $and : [{ senderId : ownId }, { recipientId : friendId }] },
+      { $and : [{ senderId : friendId }, { recipientId : ownId }] }
+    ]
+   })
+
+  if(!msg){
+    throw new Error('Error in getting Chat List')
+  }
+  return msg;
+}
+
 const getAcceptedRequestSenderId = (addedFriendObj, otherUserId) => {
   if(addedFriendObj.user1.toString() !== otherUserId){
     return addedFriendObj.user1.toString();
@@ -127,5 +141,6 @@ module.exports = {
   getUsersByReqId,
   getAllFriendList,
   getAcceptedRequestSenderId,
-  fetchUserMsgs
+  fetchUserMsgs,
+  fetchUserChatMsgById
 };

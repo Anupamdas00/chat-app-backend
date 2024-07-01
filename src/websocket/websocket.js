@@ -11,7 +11,8 @@ const {
   getUsersByReqId,
   getAllFriendList,
   getAcceptedRequestSenderId,
-  fetchUserMsgs
+  fetchUserMsgs,
+  fetchUserChatMsgById
 } = require("../utils/utility-function");
 const Friend = require("../model/friends-model");
 const  Message  = require("../model/message-model")
@@ -28,17 +29,10 @@ function setupWebSocket(server) {
     let users = addUser(socket.id, token, userId, userEmail);
     console.log("Online users", users);
 
-    socket.emit("recieveMsg", "Message from server");
+    socket.emit("recieveMsg",[ "Message from server"]);
 
     const friendNames = await getAllFriendList(Friend, userId);
     socket.emit("friendlist", friendNames);
-
-    // try{
-    //   const friendNames = await getAllFriendList(Friend, userId);
-    //   console.log('friends Id', friendNames);
-    // }catch(err){
-    //   console.log(err);
-    // }
 
     // ---------------getting add request------------------
     // will work on this after addRequest event completion
@@ -47,11 +41,11 @@ function setupWebSocket(server) {
 
 
     // getting user messages from db
-    fetchUserMsgs(userId, Message)
-      .then((msg) => {
-        socket.emit('recieveMsg', msg)
-      })
-      .catch(err => console.log(err))
+    // fetchUserMsgs(userId, Message)
+    //   .then((msg) => {
+    //     socket.emit('recieveMsg', msg)
+    //   })
+    //   .catch(err => console.log(err))
     // const msgs = await fetchUserMsgs(userId, Message)
     // console.log(msgs);
 
@@ -84,7 +78,9 @@ function setupWebSocket(server) {
         );
         const req = generateRequestMsg(saveRequest._id.toString(), sender.name);
         sentReq.push(req);
-        io.to(recievedUserScocketId).emit("gotRequest", sentReq);
+        if(recievedUserScocketId){
+          io.to(recievedUserScocketId).emit("gotRequest", sentReq);
+        }
       }
     });
 
@@ -140,17 +136,28 @@ function setupWebSocket(server) {
         const savedMessage = await messageDoc.save()
         console.log('saveMessage', savedMessage);
         if(savedMessage){
-          const { _id, message, createdAt } = savedMessage
+          const { _id, message, createdAt, senderId, recipientId } = savedMessage
           callback({_id, message, createdAt} )
           const msgToUserSocketId = getSocketIdByUserId(users, savedMessage.recipientId.toString())
-          socket.to(msgToUserSocketId).emit('recieveMsg', { _id, message, createdAt })
+          socket.emit('recieveMsg',[{ msgId : _id, message, createdAt, senderId, recipientId }])
+          socket.to(msgToUserSocketId).emit('recieveMsg', [{ msgId : _id, message, createdAt, senderId, recipientId }])
         }
       }catch(err){
         console.log('Error in saving message', err);
       }
-      
     })
 
+    // getting user chat by selecting the user for chat in client side
+    socket.on('userChatById',async (id) => {
+      console.log('request id', id);
+      try{
+        const messages = await fetchUserChatMsgById({ msgModel : Message,friendId : id, ownId : userId});
+        console.log('fetched message data',messages);
+        socket.emit('recieveMsg', messages)
+      }catch{
+        (error) => console.log(error);
+      }
+    })
 
     // ------event for user loggingout
     socket.on("loggedOut", (tokenId) => {
